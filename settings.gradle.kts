@@ -12,6 +12,7 @@ dependencyResolutionManagement {
         maven("https://jitpack.io") // PremiumVanish, Vault, YamlAssist, RedisBungee
         maven("https://repo.md-5.net/content/groups/public/") // LibsDisguises
         maven("https://nexus.codecrafter47.dyndns.eu/content/repositories/public/") // BungeeCord-proxy // I feel bad for doing this
+        maven("https://repo.codemc.org/repository/maven-public/") {name = "codemc"} //Skinsrestorer
     }
 }
 

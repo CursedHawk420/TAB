@@ -10,8 +10,13 @@ import me.neznamy.tab.shared.hook.AdventureHook;
 import me.neznamy.tab.shared.platform.TabList;
 import me.neznamy.tab.shared.platform.TabPlayer;
 import net.kyori.adventure.text.Component;
+import net.skinsrestorer.api.SkinsRestorer;
+import net.skinsrestorer.api.SkinsRestorerProvider;
+import net.skinsrestorer.api.exception.DataRequestException;
+import net.skinsrestorer.api.storage.PlayerStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import net.skinsrestorer.api.property.SkinProperty;
 
 import java.util.*;
 
@@ -28,6 +33,7 @@ public class VelocityTabList implements TabList {
     /** Expected names based on configuration, saving to restore them if another plugin overrides them */
     private final Map<TabPlayer, Component> expectedDisplayNames = new WeakHashMap<>();
 
+    public SkinsRestorer skinsRestorerAPI = SkinsRestorerProvider.get();
     @Override
     public void removeEntry(@NotNull UUID entry) {
         player.getPlayer().getTabList().removeEntry(entry);
@@ -45,15 +51,35 @@ public class VelocityTabList implements TabList {
     public void updateDisplayName(@NotNull UUID entry, @Nullable IChatBaseComponent displayName) {
         player.getPlayer().getTabList().getEntry(entry).ifPresent(e -> {
             if (player.getVersion().getMinorVersion() >= 8) {
-                Component component = displayName == null ? null : AdventureHook.toAdventureComponent(displayName, player.getVersion());
-                e.setDisplayName(component);
-                setExpectedDisplayName(entry, component);
+                String username = e.getProfile().getName();
+                Skin skin = null;
+                try {
+                    skin = getSkin(entry,username);
+                } catch (DataRequestException ex) {
+                    throw new RuntimeException(ex);
+                }
+                removeEntry(entry);
+                addEntry(new Entry(entry, username, skin, 0, 0, displayName));
             } else {
                 String username = e.getProfile().getName();
+                Skin skin = null;
+                try {
+                    skin = getSkin(entry,username);
+                } catch (DataRequestException ex) {
+                    throw new RuntimeException(ex);
+                }
                 removeEntry(entry);
-                addEntry(new Entry(entry, username, null, 0, 0, displayName));
+                addEntry(new Entry(entry, username, skin, 0, 0, displayName));
             }
         });
+    }
+
+    public Skin getSkin(UUID entry, String name) throws DataRequestException {
+
+        PlayerStorage playerStorage = skinsRestorerAPI.getPlayerStorage();
+        Optional<SkinProperty> player = playerStorage.getSkinForPlayer(entry,name);
+        Skin skin = new Skin(player.get().getValue(),player.get().getSignature());
+        return skin;
     }
 
     @Override
